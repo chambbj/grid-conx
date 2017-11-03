@@ -39,7 +39,7 @@ Bradley J Chambers, Radiant Solutions
 
 - I don't think I need to get into Python at all until we start talking about python filter and embedded python for algorithm development
 
-+++?gist=chambbj/c8f02a5e5f78130294d3cd9687a0ddce&lang=markdown&title=Gist
++++?gist=chambbj/c8f02a5e5f78130294d3cd9687a0ddce&lang=Markdown&title=Gist
 
 ---
 
