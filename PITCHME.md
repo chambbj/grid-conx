@@ -39,7 +39,25 @@ Bradley J Chambers, Radiant Solutions
 
 - I don't think I need to get into Python at all until we start talking about python filter and embedded python for algorithm development
 
-+++?gist=chambbj/c8f02a5e5f78130294d3cd9687a0ddce&title=Gist
++++
+
+Get up and running with the [PDAL Python package](https://www.pdal.io/python.html) in just five easy steps!
+
+First, from your host, pull and then fire up an `alpine:edge` container.
+
+```console
+$ docker pull alpine:edge
+$ docker run -it alpine:edge /bin/sh
+```
+
+Now, within your running container, add the `edge/testing` repository, install `py2-pdal`, and verify the imported PDAL [version number](https://pkgs.alpinelinux.org/package/edge/testing/x86_64/py2-pdal).
+
+```console
+$ echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+$ apk add --no-cache py2-pdal
+$ python -c "import pdal; print pdal.__version__"
+1.5.0
+```
 
 ---
 
