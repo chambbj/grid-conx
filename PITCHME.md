@@ -1101,11 +1101,9 @@ Credit to Chris Irwin.
 @[3-4](Read the data, assigning a spatial reference)
 @[6-7](Reset ground(2), low(3) and medium(4) vegetation to created, never classified (0))
 @[9-10](Apply Simple Morphological Filter, ignoring noise (7))
-@[12-19](Write LAS with mm precision and auto offsets)
+@[12-19](Write compressed LAZ with mm precision and auto offsets)
 
 +++
-
-Read LAS files, retaining only ground classified points, performing Poisson surface reconstruction, and writing mesh to PLY format.
 
 ```json
 {
@@ -1124,10 +1122,12 @@ Read LAS files, retaining only ground classified points, performing Poisson surf
   }]
 }
 ```
+@[3](Read the data)
+@[5-6](Passthrough only ground returns (2))
+@[8-9](Perform Poisson surface reconstruction)
+@[11-13](Write PLY)
 
 +++
-
-Read LAS files, retaining only ground, low and medium vegetation, performing greedy projection surface reconstruction, and writing mesh to PLY format.
 
 ```json
 {
@@ -1145,10 +1145,12 @@ Read LAS files, retaining only ground, low and medium vegetation, performing gre
   }]
 }
 ```
+@[3-4](Read the data, assigning a spatial reference)
+@[6-7](Passthrough only ground (2), low (3) and medium (4) vegetation)
+@[9](Perform greedy projection surface reconstruction)
+@[11-12](Write PLY)
 
 +++
-
-Read LAS, reprojecting data, resetting all classifications to 0, identifying and removing outliers, segmenting bare earth, splitting into 1km boxes, writing LAS tiles, merging tiles, retaining only ground returns, and creating 0.5m DEM using IDW.
 
 ```json
 {
@@ -1195,3 +1197,14 @@ Read LAS, reprojecting data, resetting all classifications to 0, identifying and
   }]
 }
 ```
+@[3](Read the data)
+@[5-7](Reproject the data)
+@[9-10](Reset all classifications to created, never classified (0))
+@[12](Mark outliers (7))
+@[14-15](Passthrough all points not marked as noise (7))
+@[17](Apply Simple Morphological Filter)
+@[19-20](Split the point cloud into 1km tiles)
+@[22-28](Write uncompressed LAS with mm precision and auto offsets)
+@[30](Merge all tiles)
+@[32-33](Passthrough only ground returns (2))
+@[35-41](Write 0.5m DEM using IDW)
