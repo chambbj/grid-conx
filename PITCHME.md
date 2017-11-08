@@ -41,6 +41,41 @@ Bradley J Chambers, Radiant Solutions
 
 +++
 
+- Intro/Overview (5 min)
+  - How to pull/start Alpine container
+- Filter Stage Roundup (25 min)
+  - Preliminaries
+    - DimRange
+    - Ignore
+  - Assign
+  - ApproimateCoplanar
+  - Extended Local Minimum
+  - EstimateRank
+  - Groupby
+  - Head/Tail
+  - KDistance
+  - Local Outlier Factor
+  - Locate
+  - Median Absolute Deviation
+  - Interquartile Range
+  - Clusters
+  - Eigenvalues
+  - RadialDensity
+  - Simple Morphological Filter
+  - VoxelCenterNearestNeighbor/VoxelCentroidNearestNeighbor/VoxelGrid
+  - Sample
+  - Outlier
+  - Height Above Ground
+  - Merge
+  - Range
+- Complex Pipelines (5 min)
+  - Vertical Obstructions
+  - Planar Features
+  - cirwin examples
+- Algorithm Development in Python (10 min)
+
++++
+
 Get up and running with the [PDAL Python package](https://www.pdal.io/python.html) in just five easy steps!
 
 First, from your host, pull and then fire up an `alpine:edge` container.
@@ -58,6 +93,34 @@ $ apk add --no-cache py2-pdal
 $ python -c "import pdal; print pdal.__version__"
 1.5.0
 ```
+
+---
+
+If rolling with the pdal:1.6-alpine image.
+
+We need to either 1) update the image or 2) instruct users to
+
+apk add --update ca-certificates openssl
+
+---
+
+Download some sample data. We could clone PDAL/data, or
+
+wget https://github.com/PDAL/data/raw/master/isprs/samp11-utm.laz
+
+---
+
+pdal info samp11-utm.laz
+
+---
+
+pdal translate samp11-utm.laz samp11-utm.bpf
+
+---
+
+We need to add proj4-dev to keep GDAL/OGR from barking at me. May need to fix this in the Dockerfile and/or packaging. Unfortunate that this lib is in the dev package.
+
+apk add --no-cache proj4-dev
 
 ---
 
@@ -117,7 +180,7 @@ pdal translate input.las output.las --json pipeline.json
 
 ### Filter Roundup
 
-+++
+---
 
 ### Assign
 
@@ -126,6 +189,32 @@ pdal translate input.las output.las --json pipeline.json
 - Handy for resetting classifications
 
 +++
+
+### DimRange
+
+* A [DimRange](https://www.pdal.io/stages/filters.range.html#ranges) is a
+  * named dimension, and
+  * range of values.
+* Bounds can be inclusive (`[]`) or exclusive (`()`).
+* Ranges can be negated (`!`).
+
++++
+
+```json
+{
+  "pipeline":[{
+    "type":"filters.assign",
+    "assignment":"Classification[:]=0"
+  }, {
+    "type":"filters.assign",
+    "assignment":"Classification[2:4]=0"
+  }]
+}
+```
+@[3-4](Reassign all classification values to 0)
+@[6-7](Reassign ground (2), low vegetation (3), and medium vegetation (4) values to created, never classified (0))
+
+---
 
 ### Approximate Coplanar
 
@@ -364,6 +453,30 @@ pdal translate input.las output.las --json pipeline.json
 - `filters.radialdensity`
 - Return the number of points within sphere of given radius
 - Creates new `RadialDensity` dimension
+
++++
+
+### Range
+
++++
+
+```json
+{
+  "pipeline":[{
+    "type":"filters.range",
+    "limits":"Z[10:]"
+  }, {
+    "type":"filters.range",
+    "limits":"Classification[2:2]"
+  }, {
+    "type":"filters.range",
+    "limits":"Red!(20:40]"
+  }]
+}
+```
+@[3-4](Select all points with Z greater than or equal to 10)
+@[6-7](Select all points with classification of 2)
+@[9-10](Select points with red values less than or equal to 20 as well as those greater than 40)
 
 +++
 
@@ -779,45 +892,6 @@ dtype: float64
 
 +++
 
-### DimRange
-
-* A [DimRange](https://www.pdal.io/stages/filters.range.html#ranges) is a
-  * named dimension, and
-  * range of values.
-* Bounds can be inclusive (`[]`) or exclusive (`()`).
-* Ranges can be negated (`!`).
-
-+++
-
-```json
-{
-  "pipeline":[
-    {
-      "type":"filters.range",
-      "limits":"Z[10:]"
-    },
-    {
-      "type":"filters.range",
-      "limits":"Classification[2:2]"
-    },
-    {
-      "type":"filters.range",
-      "limits":"Red!(20:40]"
-    },
-    {
-      "type":"filters.assign",
-      "assignment":"Classification[:]=0"
-    }
-  ]
-}
-```
-@[3-6](Select all points with Z greater than or equal to 10)
-@[7-10](Select all points with classification of 2)
-@[11-14](Select points with red values less than or equal to 20 as well as those greater than 40)
-@[15-18](Reassign all classification values to 0)
-
-+++
-
 ### Ignoring a `DimRange`
 
 - Available to `filters.pmf` and `filters.smrf`
@@ -996,3 +1070,130 @@ max            63.700000
 +++
 
 ![after](figures/after-vg.png)
+
+---
+
+# Example Pipelines
+
+Credit to Chris Irwin.
+
++++
+
+Read LAS files, resetting all classifications of 2, 3, or 4, run SMRF bare earth algorithm (ignoring noise points), and writing LAS.
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las",
+    "spatialreference":"EPSG:32610"
+  }, {
+    "assignment":"Classification[2:4]=0",
+    "type":"filters.assign"
+  }, {
+    "type":"filters.smrf",
+    "ignore":"Classification[7:7]"
+  }, {
+    "type":"writers.las",
+    "compression":"true",
+    "scale_x":"0.001",
+    "scale_y":"0.001",
+    "scale_z":"0.001",
+    "offset_x":"auto",
+    "offset_y":"auto",
+    "offset_z":"auto"
+  }]
+}
+```
+
++++
+
+Read LAS files, retaining only ground classified points, performing Poisson surface reconstruction, and writing mesh to PLY format.
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las"
+  }, {
+    "limits":"Classification[2:2]",
+    "type":"filters.range"
+  }, {
+    "type":"filters.poisson",
+    "depth":"8"
+  }, {
+    "type":"writers.ply",
+    "faces":"true",
+    "storage_mode":"little endian"
+  }]
+}
+```
+
++++
+
+Read LAS files, retaining only ground, low and medium vegetation, performing greedy projection surface reconstruction, and writing mesh to PLY format.
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las",
+    "spatialreference":"EPSG:32610"
+  }, {
+    "limits":"Classification[2:4]",
+    "type":"filters.range"
+  }, {
+    "type":"filters.greedyprojection"
+  }, {
+    "type":"writers.ply",
+    "faces":"true"
+  }]
+}
+```
+
++++
+
+Read LAS, reprojecting data, resetting all classifications to 0, identifying and removing outliers, segmenting bare earth, splitting into 1km boxes, writing LAS tiles, merging tiles, retaining only ground returns, and creating 0.5m DEM using IDW.
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las"
+  }, {
+    "type":"filters.reprojection",
+    "in_srs":"EPSG:6340",
+    "out_srs":"EPSG:26911"
+  }, {
+    "assignment":"Classification[:]=0",
+    "type":"filters.assign"
+  }, {
+    "type":"filters.outlier"
+  }, {
+    "type":"filters.range",
+    "limits":"Classification![7:7]"
+  }, {
+    "type":"filters.smrf"
+  }, {
+    "length":"1000",
+    "type":"filters.splitter"
+  }, {
+    "type":"writers.las",
+    "scale_x":"0.001",
+    "scale_y":"0.001",
+    "scale_z":"0.001",
+    "offset_x":"auto",
+    "offset_y":"auto",
+    "offset_z":"auto"
+  }, {
+    "type":"filters.merge"
+  }, {
+    "limits":"Classification[2:2]",
+    "type":"filters.range"
+  }, {
+    "type":"writers.gdal",
+    "radius":0.7071,
+    "resolution":0.5,
+    "output_type":"idw",
+    "nodata":-9999,
+    "window_size":2,
+    "gdalopts":"COMPRESS=DEFLATE,TILED=YES,PREDICTOR=3"
+  }]
+}
+```
