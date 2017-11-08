@@ -1075,8 +1075,6 @@ Credit to Chris Irwin.
 
 +++
 
-Read LAS files, resetting all classifications of 2, 3, or 4, run SMRF bare earth algorithm (ignoring noise points), and writing LAS.
-
 ```json
 {
   "pipeline":[{
@@ -1100,6 +1098,10 @@ Read LAS files, resetting all classifications of 2, 3, or 4, run SMRF bare earth
   }]
 }
 ```
+@[3-4](Read the data, assigning a spatial reference)
+@[6-7](Reset ground(2), low(3) and medium(4) vegetation to created, never classified (0))
+@[9-10](Apply Simple Morphological Filter, ignoring noise (7))
+@[12-19](Write LAS with mm precision and auto offsets)
 
 +++
 
