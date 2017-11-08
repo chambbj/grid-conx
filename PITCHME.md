@@ -206,29 +206,6 @@ pdal translate input.las output.las --json pipeline.json
 
 ![png](figures/coplanar.png)
 
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.smrf"
-    }, {
-      "type":"filters.hag"
-    }, {
-      "type":"filters.range",
-      "limits":"HeightAboveGround[2:)"
-    }, {
-      "type":"filters.approximatecoplanar"
-    }]
-}
-```
-
-+++
-
-![png](figures/coplanar-nonground.png)
-
 ---
 
 ### Assign
@@ -316,30 +293,6 @@ pdal translate input.las output.las --json pipeline.json
 +++
 
 ![rank scatter](figures/rank-qt.png)
-
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.smrf"
-    }, {
-      "type":"filters.hag"
-    }, {
-      "type":"filters.range",
-      "limits":"HeightAboveGround[2:)"
-    }, {
-      "type":"filters.estimaterank"
-    }
-  ]
-}
-```
-
-+++
-
-![rank scatter nonground](figures/rank-qt-non-ground.png)
 
 ---
 
@@ -685,79 +638,6 @@ def sor(ins, outs):
 
 ---
 
-```json
-{
-  "pipeline": [
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type": "filters.smrf"
-    }, {
-      "type": "filters.hag"
-    }, {
-      "type": "filters.range", "limits": "HeightAboveGround[3:]"
-    }, {
-      "type": "filters.cluster", "tolerance": 3
-    }, {
-      "type": "filters.groupby", "dimension": "ClusterID"
-    }, {
-      "type": "filters.locate", "dimension": "HeightAboveGround", "minmax": "max"
-    }, {
-      "type": "filters.merge"
-    }, {
-      "type": "filters.range", "limits": "HeightAboveGround[20:]"
-    }
-  ]
-}
-```
-
-+++
-
-```python
->>> p = pdal.Pipeline(json)
->>> count = p.execute()
->>> vo = pd.DataFrame(p.arrays[0], columns=['X','Y','Z','HeightAboveGround'])
->>> vo.describe()
-```
-
-```bash
-                   X             Y           Z  HeightAboveGround
-count      15.000000  1.500000e+01   15.000000          15.000000
-mean   512799.513333  5.403632e+06  352.667333          38.212000
-std        23.111817  4.812817e+01   22.661835          16.576486
-min    512730.790000  5.403557e+06  317.300000          20.050000
-25%    512795.435000  5.403623e+06  333.970000          21.895000
-50%    512798.290000  5.403624e+06  354.110000          38.450000
-75%    512813.460000  5.403626e+06  367.255000          54.255000
-max    512831.280000  5.403739e+06  401.930000          63.700000
-```
-
-+++
-
-```python
->>> vo
-```
-
-```bash
-            X           Y       Z  HeightAboveGround
-0   512794.22  5403576.38  317.30              21.99
-1   512827.97  5403630.85  329.92              24.45
-2   512786.89  5403626.56  366.60              58.15
-3   512811.06  5403612.84  326.88              20.26
-4   512792.11  5403626.03  368.89              59.78
-5   512797.05  5403624.26  338.02              28.91
-6   512796.65  5403624.90  350.39              41.28
-7   512798.29  5403625.87  361.53              52.31
-8   512797.34  5403623.67  347.56              38.45
-9   512798.47  5403623.67  354.11              44.89
-10  512798.73  5403624.20  365.42              56.20
-11  512831.28  5403557.39  323.52              20.96
-12  512815.86  5403621.44  370.03              63.70
-13  512815.99  5403739.10  367.91              20.05
-14  512730.79  5403738.80  401.93              21.80
-```
-
----
-
 ### Python Package
 
 * The PDAL Python [package](https://pypi.python.org/pypi/PDAL) can be installed via [pip](https://pip.pypa.io/en/stable/).
@@ -994,81 +874,6 @@ dtype: float64
 
 ---
 
-## Questions?
-
----
-
-### Docker Images
-
-| **Image** | **Tag** | **Size** |
-|---------|-------|--------|
-| [pdal/dependencies](https://hub.docker.com/r/pdal/dependencies/) | 1.5 | 3.1GB |
-| [pdal/dependencies](https://hub.docker.com/r/pdal/dependencies/) | latest | 3.31GB |
-| [pdal/pdal](https://hub.docker.com/r/pdal/pdal/) | 1.5 | 3.67GB |
-| [pdal/pdal](https://hub.docker.com/r/pdal/pdal/) | latest | 3.67GB |
-
-- Images building plugins on top of the PDAL base image can grow even larger |
-
-+++
-
-### Alpine Docker Image
-
-* Prototype Alpine image with ~80% of the plugins
-
-| **Image** | **Tag** | **Size** |
-|---------|-------|--------|
-| pdal/dependencies | alpine | 1.07GB |
-| pdal/pdal | alpine | 365MB |
-
----
-
-### Status of PCL Filters
-
-+++
-
-| **Old (PCL)** | **New (PDAL)** |
-|---------------|----------------|
-| `filters.ground` | `filters.pmf` |
-| `filters.radiusoutlier` | `filters.outlier` |
-| `filters.statisticaloutlier` | `filters.outlier` |
-| `filters.height` | `filters.hag` |
-| `filters.dartsample` | `filters.sample` |
-
-<p style="font-size:0.6em">Native PDAL variants of PCL Plugin filters</p>
-
-+++
-
-```json
-{
-  "pipeline": [
-    {
-      "type": "filters.pclblock",
-      "methods": [
-        {
-          "setLeafSize": {
-            "y": 2.0,
-            "x": 2.0,
-            "z": 2.0
-          },
-          "name": "VoxelGrid"
-        }
-      ]
-    }
-  ]
-}
-```
-@[5-14](PCL JSON specification bumped to v0.2 → easier to embed in PDAL JSON)
-
-+++
-
-![before](figures/before-vg.png)
-
-+++
-
-![after](figures/after-vg.png)
-
----
-
 # Example Pipelines
 
 Credit to Chris Irwin.
@@ -1208,3 +1013,170 @@ Credit to Chris Irwin.
 @[30](Merge all tiles)
 @[32-33](Passthrough only ground returns (2))
 @[35-41](Write 0.5m DEM using IDW)
+
+---
+
+### Moar Examples
+
++++
+
+```json
+{
+  "pipeline": [
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type": "filters.smrf"
+    }, {
+      "type": "filters.hag"
+    }, {
+      "type": "filters.range", "limits": "HeightAboveGround[3:]"
+    }, {
+      "type": "filters.cluster", "tolerance": 3
+    }, {
+      "type": "filters.groupby", "dimension": "ClusterID"
+    }, {
+      "type": "filters.locate", "dimension": "HeightAboveGround", "minmax": "max"
+    }, {
+      "type": "filters.merge"
+    }, {
+      "type": "filters.range", "limits": "HeightAboveGround[20:]"
+    }
+  ]
+}
+```
+
++++
+
+```python
+>>> p = pdal.Pipeline(json)
+>>> count = p.execute()
+>>> vo = pd.DataFrame(p.arrays[0], columns=['X','Y','Z','HeightAboveGround'])
+>>> vo.describe()
+```
+
+```bash
+                   X             Y           Z  HeightAboveGround
+count      15.000000  1.500000e+01   15.000000          15.000000
+mean   512799.513333  5.403632e+06  352.667333          38.212000
+std        23.111817  4.812817e+01   22.661835          16.576486
+min    512730.790000  5.403557e+06  317.300000          20.050000
+25%    512795.435000  5.403623e+06  333.970000          21.895000
+50%    512798.290000  5.403624e+06  354.110000          38.450000
+75%    512813.460000  5.403626e+06  367.255000          54.255000
+max    512831.280000  5.403739e+06  401.930000          63.700000
+```
+
++++
+
+```python
+>>> vo
+```
+
+```bash
+            X           Y       Z  HeightAboveGround
+0   512794.22  5403576.38  317.30              21.99
+1   512827.97  5403630.85  329.92              24.45
+2   512786.89  5403626.56  366.60              58.15
+3   512811.06  5403612.84  326.88              20.26
+4   512792.11  5403626.03  368.89              59.78
+5   512797.05  5403624.26  338.02              28.91
+6   512796.65  5403624.90  350.39              41.28
+7   512798.29  5403625.87  361.53              52.31
+8   512797.34  5403623.67  347.56              38.45
+9   512798.47  5403623.67  354.11              44.89
+10  512798.73  5403624.20  365.42              56.20
+11  512831.28  5403557.39  323.52              20.96
+12  512815.86  5403621.44  370.03              63.70
+13  512815.99  5403739.10  367.91              20.05
+14  512730.79  5403738.80  401.93              21.80
+```
+
++++
+
+```json
+{
+  "pipeline":[
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type":"filters.smrf"
+    }, {
+      "type":"filters.hag"
+    }, {
+      "type":"filters.range",
+      "limits":"HeightAboveGround[2:)"
+    }, {
+      "type":"filters.approximatecoplanar"
+    }]
+}
+```
+
++++
+
+![png](figures/coplanar-nonground.png)
+
++++
+
+```json
+{
+  "pipeline":[
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type":"filters.smrf"
+    }, {
+      "type":"filters.hag"
+    }, {
+      "type":"filters.range",
+      "limits":"HeightAboveGround[2:)"
+    }, {
+      "type":"filters.estimaterank"
+    }
+  ]
+}
+```
+
++++
+
+![rank scatter nonground](figures/rank-qt-non-ground.png)
+
+---
+
+## Questions?
+
+---
+
+### Status of PCL Filters
+
++++
+
+| **Old (PCL)** | **New (PDAL)** |
+|---------------|----------------|
+| `filters.ground` | `filters.pmf` |
+| `filters.radiusoutlier` | `filters.outlier` |
+| `filters.statisticaloutlier` | `filters.outlier` |
+| `filters.height` | `filters.hag` |
+| `filters.dartsample` | `filters.sample` |
+
+<p style="font-size:0.6em">Native PDAL variants of PCL Plugin filters</p>
+
++++
+
+```json
+{
+  "pipeline": [
+    {
+      "type": "filters.pclblock",
+      "methods": [
+        {
+          "setLeafSize": {
+            "y": 2.0,
+            "x": 2.0,
+            "z": 2.0
+          },
+          "name": "VoxelGrid"
+        }
+      ]
+    }
+  ]
+}
+```
+@[5-14](PCL JSON specification bumped to v0.2 → easier to embed in PDAL JSON)
