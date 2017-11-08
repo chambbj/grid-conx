@@ -1029,21 +1029,36 @@ Credit to Chris Irwin.
     }, {
       "type": "filters.hag"
     }, {
-      "type": "filters.range", "limits": "HeightAboveGround[3:]"
+      "type": "filters.range",
+      "limits": "HeightAboveGround[3:]"
     }, {
-      "type": "filters.cluster", "tolerance": 3
+      "type": "filters.cluster",
+      "tolerance": 3
     }, {
-      "type": "filters.groupby", "dimension": "ClusterID"
+      "type": "filters.groupby",
+      "dimension": "ClusterID"
     }, {
-      "type": "filters.locate", "dimension": "HeightAboveGround", "minmax": "max"
+      "type": "filters.locate",
+      "dimension": "HeightAboveGround",
+      "minmax": "max"
     }, {
       "type": "filters.merge"
     }, {
-      "type": "filters.range", "limits": "HeightAboveGround[20:]"
+      "type": "filters.range",
+      "limits": "HeightAboveGround[20:]"
     }
   ]
 }
 ```
+@[3](Read the data)
+@[5](Apply Simple Morphological Filter)
+@[7](Compute Height Above Ground)
+@[9-10](Passthrough only points with HeightAboveGround greater than 3 meters)
+@[12-13](Perform Euclidean cluster extraction with tolerance of 3 meters)
+@[15-16](Create separate PointView for each cluster)
+@[18-20](Locate the maximum HeightAboveGround value in each cluster)
+@[22](Merge maximum HeightAboveGround results from each cluster)
+@[24-25](Retain only those clusters with maximum HeightAboveGround value over 20 meters)
 
 +++
 
@@ -1109,6 +1124,11 @@ max    512831.280000  5.403739e+06  401.930000          63.700000
     }]
 }
 ```
+@[3](Read the data)
+@[5](Apply Simple Morphological Filter)
+@[7](Compute Height Above Ground)
+@[9-10](Passthrough only points with HeightAboveGround greater than 2 meters)
+@[12](Determine if a point is in an approximately coplanar region)
 
 +++
 
@@ -1133,6 +1153,11 @@ max    512831.280000  5.403739e+06  401.930000          63.700000
   ]
 }
 ```
+@[3](Read the data)
+@[5](Apply Simple Morphological Filter)
+@[7](Compute Height Above Ground)
+@[9-10](Passthrough only points with HeightAboveGround greater than 2 meters)
+@[12](Estimate rank at each point)
 
 +++
 
