@@ -47,27 +47,6 @@ Bradley J Chambers, Radiant Solutions
   - Preliminaries
     - DimRange
     - Ignore
-  - Assign
-  - ApproimateCoplanar
-  - Extended Local Minimum
-  - EstimateRank
-  - Groupby
-  - Head/Tail
-  - KDistance
-  - Local Outlier Factor
-  - Locate
-  - Median Absolute Deviation
-  - Interquartile Range
-  - Clusters
-  - Eigenvalues
-  - RadialDensity
-  - Simple Morphological Filter
-  - VoxelCenterNearestNeighbor/VoxelCentroidNearestNeighbor/VoxelGrid
-  - Sample
-  - Outlier
-  - Height Above Ground
-  - Merge
-  - Range
 - Complex Pipelines (5 min)
   - Vertical Obstructions
   - Planar Features
@@ -180,6 +159,76 @@ pdal translate input.las output.las --json pipeline.json
 
 ### Filter Roundup
 
+- ApproimateCoplanar
+- Assign
+- Clusters
+- Eigenvalues
+- EstimateRank
+- Extended Local Minimum
+- Groupby
+- Head/Tail
+- Height Above Ground
+- Interquartile Range
+- KDistance
+- Local Outlier Factor
+- Locate
+- Median Absolute Deviation
+- Merge
+- Outlier
+- RadialDensity
+- Range
+- Sample
+- Simple Morphological Filter
+- VoxelCenterNearestNeighbor/VoxelCentroidNearestNeighbor/VoxelGrid
+
+---
+
+### ApproximateCoplanar
+
+- `filters.approximatecoplanar`
+- Ratios of eigenvalues
+- Creates a new binary dimension called `Coplanar`
+
++++
+
+```json
+{
+  "pipeline":[
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type":"filters.approximatecoplanar"
+    }
+  ]
+}
+```
+
++++
+
+![png](figures/coplanar.png)
+
++++
+
+```json
+{
+  "pipeline":[
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type":"filters.smrf"
+    }, {
+      "type":"filters.hag"
+    }, {
+      "type":"filters.range",
+      "limits":"HeightAboveGround[2:)"
+    }, {
+      "type":"filters.approximatecoplanar"
+    }]
+}
+```
+
++++
+
+![png](figures/coplanar-nonground.png)
+
 ---
 
 ### Assign
@@ -212,69 +261,37 @@ pdal translate input.las output.las --json pipeline.json
 }
 ```
 @[3-4](Reassign all classification values to 0)
-@[6-7](Reassign ground (2), low vegetation (3), and medium vegetation (4) values to created, never classified (0))
+@[6-7](Reassign ground (2), low (3) and medium (4) vegetation values to created, never classified (0))
 
 ---
 
-### Approximate Coplanar
+### Clusters
 
-- `filters.approximatecoplanar`
-- Ratios of eigenvalues
-- Creates a new binary dimension called `Coplanar`
-
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.approximatecoplanar"
-    }
-  ]
-}
-```
+- `filters.cluster`
+- Cluster points by proximity (Euclidean distance)
+- Iterate over newly added points until no more points can be added
+- Creates a new integer dimension specifying the `ClusterID`
 
 +++
 
-![png](figures/coplanar.png)
+![png](figures/cluster-sizes.png)
+
+---
+
+### Eigenvalues
+
+- `filters.eigenvalues`
+- Filters like `filters.approximatecoplanar` use eigenvalues, but analysts may wish to precompute eigenvalues and operate directly on them
+- Creates three new dimensions
+  - `Eigenvalue0`
+  - `Eigenvalue1`
+  - `Eigenvalue2`
 
 +++
 
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.smrf"
-    },
-    {
-      "type":"filters.hag"
-    },
-    {
-      "type":"filters.range",
-      "limits":"HeightAboveGround[2:)"
-    },
-    {
-      "type":"filters.approximatecoplanar"
-    }
-  ]
-}
-```
+![png](figures/eigenvalues.png)
 
-+++
-
-![png](figures/coplanar-nonground.png)
-
-+++
-
-### Extended Local Minimum
-
-- `filters.elm`
-- Extended Local Minimum seeks to identify outliers below the ground surface
-- Marks outliers with `Classification` value of 7
-
-+++
+---
 
 ### Estimate Rank
 
@@ -308,15 +325,12 @@ pdal translate input.las output.las --json pipeline.json
     "./data/isprs/samp11-utm.laz",
     {
       "type":"filters.smrf"
-    },
-    {
+    }, {
       "type":"filters.hag"
-    },
-    {
+    }, {
       "type":"filters.range",
       "limits":"HeightAboveGround[2:)"
-    },
-    {
+    }, {
       "type":"filters.estimaterank"
     }
   ]
@@ -327,7 +341,15 @@ pdal translate input.las output.las --json pipeline.json
 
 ![rank scatter nonground](figures/rank-qt-non-ground.png)
 
-+++
+---
+
+### Extended Local Minimum
+
+- `filters.elm`
+- Extended Local Minimum seeks to identify outliers below the ground surface
+- Marks outliers with `Classification` value of 7
+
+---
 
 ### Groupby
 
@@ -335,14 +357,90 @@ pdal translate input.las output.las --json pipeline.json
 - Split the incoming PointView into separate PointViews by given criteria
 - Allows us to operate on each individually (e.g., find centroid of each cluster)
 
-+++
+---
 
 ### Head (and Tail)
 
 - `filters.head` and `filters.tail`
 - Pass only the specified number of points from beginning or ending of the PointView
 
+---
+
+### Height Above Ground
+
+- `filters.hag`
+- Creates new `HeightAboveGround` dimension
+
 +++
+
+1. [SMRF](https://pdal.io/stages/filters.smrf.html) to segment ground and non-ground returns
+2. [HAG](https://pdal.io/stages/filters.hag.html) to estimate the `HeightAboveGround` using the return information.
+
++++
+
+Recall the kernel density of raw elevations...
+
+![KDE Z](figures/kde-z.png)
+
++++
+
+```json
+{
+  "pipeline":[
+    "./data/isprs/samp11-utm.laz",
+    {
+      "type":"filters.smrf"
+    }, {
+      "type":"filters.hag"
+    }]
+}
+```
+@[7](Now, consider the `HeightAboveGround` dimension)
+
++++
+
+```python
+>>> p = pdal.Pipeline(json)
+>>> count = p.execute()
+>>> df = pd.DataFrame(p.arrays[0])
+>>> sns.kdeplot(df['HeightAboveGround'], cut=0, shade=True, vertical=True);
+```
+
+![KDE HAG](figures/initial-kde-hag.png)
+
++++
+
+```python
+>>> df[['HeightAboveGround']].describe()
+```
+
+```bash
+       HeightAboveGround
+count       15607.000000
+mean            5.467956
+std             5.006438
+min           -13.280000
+25%             2.110000
+50%             3.870000
+75%             7.810000
+max            63.700000
+```
++++
+
+![hag](figures/hag.png)
+
+---
+
+### Interquartile Rnage
+
+- `filters.iqr`
+- Filter points by evaluating Interquartile Range for a given dimension
+
++++
+
+![png](figures/iqr-lof.png)
+
+---
 
 ### KDistance
 
@@ -350,7 +448,7 @@ pdal translate input.las output.las --json pipeline.json
 - Compute the distance to the k-th nearest neighbor
 - Creates new `KDistance` dimension
 
-+++
+---
 
 ### Local Outlier Factor
 
@@ -396,7 +494,7 @@ pdal translate input.las output.las --json pipeline.json
 - `filters.locate`
 - Find and return only the min or max point in the incoming PointView (e.g., of a cluster)
 
-+++
+---
 
 ### Median Absolute Deviation
 
@@ -407,116 +505,13 @@ pdal translate input.las output.las --json pipeline.json
 
 ![png](figures/mad-lof.png)
 
-+++
+---
 
-### Interquartile Rnage
+### Merge
 
-- `filters.iqr`
-- Filter points by evaluating Interquartile Range for a given dimension
+---
 
-+++
-
-![png](figures/iqr-lof.png)
-
-+++
-
-### Clusters
-
-- `filters.cluster`
-- Cluster points by proximity (Euclidean distance)
-- Iterate over newly added points until no more points can be added
-- Creates a new integer dimension specifying the `ClusterID`
-
-+++
-
-![png](figures/cluster-sizes.png)
-
-+++
-
-### Eigenvalues
-
-- `filters.eigenvalues`
-- Filters like `filters.approximatecoplanar` use eigenvalues, but analysts may wish to precompute eigenvalues and operate directly on them
-- Creates three new dimensions
-  - `Eigenvalue0`
-  - `Eigenvalue1`
-  - `Eigenvalue2`
-
-+++
-
-![png](figures/eigenvalues.png)
-
-+++
-
-### Radial Density
-
-- `filters.radialdensity`
-- Return the number of points within sphere of given radius
-- Creates new `RadialDensity` dimension
-
-+++
-
-### Range
-
-+++
-
-```json
-{
-  "pipeline":[{
-    "type":"filters.range",
-    "limits":"Z[10:]"
-  }, {
-    "type":"filters.range",
-    "limits":"Classification[2:2]"
-  }, {
-    "type":"filters.range",
-    "limits":"Red!(20:40]"
-  }]
-}
-```
-@[3-4](Select all points with Z greater than or equal to 10)
-@[6-7](Select all points with classification of 2)
-@[9-10](Select points with red values less than or equal to 20 as well as those greater than 40)
-
-+++
-
-### Simple Morphological Filter
-
-- `filters.smrf`
-- New alternative to PMF, still uses morphological operators
-- Marks ground points as `Classification` value of 2 (else 1)
-
-+++
-
-### Voxel Methods
-
-- `filters.voxelcenternearestneighbor` and `filters.voxelcentroidnearestneighbor`
-- Eventual replacement of PCL `filters.voxelgrid`
-- Thins the point cloud to one point per voxel
-
-+++
-
-![center](figures/voxelcenter.png)
-
-+++
-
-![centroid](figures/voxelcentroid.png)
-
-+++
-
-### Poisson Sampling
-
-- `filters.sample`
-- Poisson disk sampling
-- No two points can be closer than a given radius
-
-+++
-
-![sample](figures/poisson.png)
-
-+++
-
-### Removing Noise
+### Outlier
 
 This tutorial is meant to walk through the use of and theory behind one of PDAL's `outlier` filters.
 
@@ -620,7 +615,75 @@ def sor(ins, outs):
 }
 ```
 
+---
+
+### Radial Density
+
+- `filters.radialdensity`
+- Return the number of points within sphere of given radius
+- Creates new `RadialDensity` dimension
+
+---
+
+### Range
+
 +++
+
+```json
+{
+  "pipeline":[{
+    "type":"filters.range",
+    "limits":"Z[10:]"
+  }, {
+    "type":"filters.range",
+    "limits":"Classification[2:2]"
+  }, {
+    "type":"filters.range",
+    "limits":"Red!(20:40]"
+  }]
+}
+```
+@[3-4](Select all points with Z greater than or equal to 10)
+@[6-7](Select all points with classification of 2)
+@[9-10](Select points with red values less than or equal to 20 as well as those greater than 40)
+
+---
+
+### Sample
+
+- `filters.sample`
+- Poisson disk sampling
+- No two points can be closer than a given radius
+
++++
+
+![sample](figures/poisson.png)
+
+---
+
+### Simple Morphological Filter
+
+- `filters.smrf`
+- New alternative to PMF, still uses morphological operators
+- Marks ground points as `Classification` value of 2 (else 1)
+
+---
+
+### Voxel Methods
+
+- `filters.voxelcenternearestneighbor` and `filters.voxelcentroidnearestneighbor`
+- Eventual replacement of PCL `filters.voxelgrid`
+- Thins the point cloud to one point per voxel
+
++++
+
+![center](figures/voxelcenter.png)
+
++++
+
+![centroid](figures/voxelcentroid.png)
+
+---
 
 ```json
 {
@@ -928,73 +991,6 @@ dtype: float64
 }
 ```
 @[1-8](Noise points are left intact, just ignored.)
-
-+++
-
-### Height Above Ground
-
-- `filters.hag`
-- Creates new `HeightAboveGround` dimension
-
-+++
-
-1. [SMRF](https://pdal.io/stages/filters.smrf.html) to segment ground and non-ground returns
-2. [HAG](https://pdal.io/stages/filters.hag.html) to estimate the `HeightAboveGround` using the return information.
-
-+++
-
-Recall the kernel density of raw elevations...
-
-![KDE Z](figures/kde-z.png)
-
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.smrf"
-    },
-    {
-      "type":"filters.hag"
-    }
-  ]
-}
-```
-@[7-9](Now, consider the `HeightAboveGround` dimension)
-
-+++
-
-```python
->>> p = pdal.Pipeline(json)
->>> count = p.execute()
->>> df = pd.DataFrame(p.arrays[0])
->>> sns.kdeplot(df['HeightAboveGround'], cut=0, shade=True, vertical=True);
-```
-
-![KDE HAG](figures/initial-kde-hag.png)
-
-+++
-
-```python
->>> df[['HeightAboveGround']].describe()
-```
-
-```bash
-       HeightAboveGround
-count       15607.000000
-mean            5.467956
-std             5.006438
-min           -13.280000
-25%             2.110000
-50%             3.870000
-75%             7.810000
-max            63.700000
-```
-+++
-
-![hag](figures/hag.png)
 
 ---
 
