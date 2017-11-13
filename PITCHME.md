@@ -8,102 +8,38 @@ Bradley J Chambers, Radiant Solutions
 
 ### Overview
 
-* Docker Images
-* Filter-only Pipelines
-* Status of PCL Filters
-* Python Package
-* Python Examples
-* Filter Roundup
-
----
-
-### New Overview
-
-- You've done your homework, but...
-- here is how to pull `pdal-notebook`, if you want to follow exactly!
-- https://hub.docker.com/r/chambbj/pdal-notebook/
-- docker pull chambbj/pdal-notebook
-- docker run -it --init --rm -p 8888:8888 -v $(pwd)/notebooks:/notebooks chambbj/pdal-notebook
-
-- Or, maybe we encourage people to use this https://pkgs.alpinelinux.org/package/edge/testing/x86_64/pdal
-
-- Though many will be running Windows, I will demo in Docker because I'm stubborn
-
-- We need to focus more on concepts here I think.
-- What do the filters actually do?
-- What does it mean to ignore?
-- Filter vs. Run?
-
-- Even if I demo in Alpine/Jupyter/whatever, if I have examples as JSON pipelines, they should be able to run wherever
-- So the basic workflow will be to show the pipeline, and then show how to invoke from the CLI
-
-- I don't think I need to get into Python at all until we start talking about python filter and embedded python for algorithm development
-
-+++
-
-- Intro/Overview (5 min)
-  - How to pull/start Alpine container
+- Getting Started (5 min)
 - Filter Stage Roundup (25 min)
-  - Preliminaries
-    - DimRange
-    - Ignore
-- Complex Pipelines (5 min)
-  - Vertical Obstructions
-  - Planar Features
-  - cirwin examples
-- Algorithm Development in Python (10 min)
+- Pipeline Examples (15 min)
+
+---
+
+### Getting Started
 
 +++
 
-Get up and running with the [PDAL Python package](https://www.pdal.io/python.html) in just five easy steps!
-
-First, from your host, pull and then fire up an `alpine:edge` container.
+### How to pull/start Alpine container
 
 ```console
-$ docker pull alpine:edge
-$ docker run -it alpine:edge /bin/sh
+docker pull chambbj/grid-conx
+docker run -it --rm chambbj/grid-conx /bin/sh
 ```
 
-Now, within your running container, add the `edge/testing` repository, install `py2-pdal`, and verify the imported PDAL [version number](https://pkgs.alpinelinux.org/package/edge/testing/x86_64/py2-pdal).
++++
 
-```console
-$ echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-$ apk add --no-cache py2-pdal
-$ python -c "import pdal; print pdal.__version__"
-1.5.0
-```
+Need to:
+- apk add --update ca-certificates openssl
+- apk add --no-cache proj4-dev
+- Download some sample data. We could clone PDAL/data, or
+- wget https://github.com/PDAL/data/raw/master/isprs/samp11-utm.laz
 
----
-
-If rolling with the pdal:1.6-alpine image.
-
-We need to either 1) update the image or 2) instruct users to
-
-apk add --update ca-certificates openssl
-
----
-
-Download some sample data. We could clone PDAL/data, or
-
-wget https://github.com/PDAL/data/raw/master/isprs/samp11-utm.laz
-
----
++++
 
 pdal info samp11-utm.laz
 
----
++++
 
 pdal translate samp11-utm.laz samp11-utm.bpf
-
----
-
-We need to add proj4-dev to keep GDAL/OGR from barking at me. May need to fix this in the Dockerfile and/or packaging. Unfortunate that this lib is in the dev package.
-
-apk add --no-cache proj4-dev
-
----
-
-### Filter-only Pipelines
 
 +++
 
@@ -157,62 +93,13 @@ pdal translate input.las output.las --json pipeline.json
 
 ---
 
-### Filter Roundup
+### Filter Stage Roundup
 
-- ApproimateCoplanar
-- Assign
-- Clusters
-- Eigenvalues
-- EstimateRank
-- Extended Local Minimum
-- Groupby
-- Head/Tail
-- Height Above Ground
-- Interquartile Range
-- KDistance
-- Local Outlier Factor
-- Locate
-- Median Absolute Deviation
-- Merge
-- Outlier
-- RadialDensity
-- Range
-- Sample
-- Simple Morphological Filter
-- VoxelCenterNearestNeighbor/VoxelCentroidNearestNeighbor/VoxelGrid
-
----
-
-### ApproximateCoplanar
-
-- `filters.approximatecoplanar`
-- Ratios of eigenvalues
-- Creates a new binary dimension called `Coplanar`
+In which we touch on touch on the wide number of filter stages available to PDAL users today.
 
 +++
 
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.approximatecoplanar"
-    }
-  ]
-}
-```
-
-+++
-
-![png](figures/coplanar.png)
-
----
-
-### Assign
-
-- `filters.assign`
-- Assign a value to a `DimRange`
-- Handy for resetting classifications
+But first...
 
 +++
 
@@ -240,6 +127,192 @@ pdal translate input.las output.las --json pipeline.json
 @[3-4](Reassign all classification values to 0)
 @[6-7](Reassign ground (2), low (3) and medium (4) vegetation values to created, never classified (0))
 
++++
+
+```json
+{
+  "pipeline":[{
+    "type":"filters.range",
+    "limits":"Z[10:)"
+  }, {
+    "type":"filters.range",
+    "limits":"Classification[2:2]"
+  }]
+}
+```
+@[3-4](Select all points with Z greater than or equal to 10)
+@[6-7](Select all points with classification of 2)
+
++++
+
+### Ignoring a `DimRange`
+
+- Available to `filters.pmf` and `filters.smrf`
+- Eliminates the need to completely remove points (e.g., noise)
+- Instead, points are ignored
+
++++
+
+```json
+{
+  "pipeline":[
+    {
+      "type":"filters.range",
+      "limits":"Classification![7:7]"
+    },
+    {
+      "type":"filters.smrf"
+    }
+  ]
+}
+```
+@[1-11](Noise points are removed!)
+
++++
+
+```json
+{
+  "pipeline":[
+    {
+      "type":"filters.smrf",
+      "ignore":"Classification[7:7]"
+    }
+  ]
+}
+```
+@[1-8](Noise points are left intact, just ignored.)
+
++++
+
+Filters that:
+- create/alter dimensions (other than XYZ)
+- change point order
+- move points
+- cull points
+- create points
+- create new PointViews
+- join PointViews
+- create metadata
+- create meshes
+- embed other languages
+
++++
+
+### Filters that create/alter dimensions (other than XYZ)
+
+- [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html)
+- [Assign](https://www.pdal.io/stages/filters.assign.html)
+- [Cluster](https://www.pdal.io/stages/filters.cluster.html)
+- [ColorInterp](https://www.pdal.io/stages/filters.colorinterp.html)
+- [Colorization](https://www.pdal.io/stages/filters.colorization.html)
+- [ComputeRange](https://www.pdal.io/stages/filters.computerange.html)
+- [Eigenvalues](https://www.pdal.io/stages/filters.eigenvalues.html)
+- [EstimateRank](https://www.pdal.io/stages/filters.estimaterank.html)
+- [Extended Local Minimum](https://www.pdal.io/stages/filters.elm.html)
+- [Ferry](https://www.pdal.io/stages/filters.ferry.html)
+
++++
+
+### Filters that create/alter dimensions (other than XYZ)
+
+- [HAG](https://www.pdal.io/stages/filters.hag.html)
+- [KDistance](https://www.pdal.io/stages/filters.kdistance.html)
+- [LOF](https://www.pdal.io/stages/filters.lof.html)
+- [Mongus](https://www.pdal.io/stages/filters.mongus.html)
+- [Normal](https://www.pdal.io/stages/filters.normal.html)
+- [Outlier](https://www.pdal.io/stages/filters.outlier.html)
+- [Overlay](https://www.pdal.io/stages/filters.overlay.html)
+- [PMF](https://www.pdal.io/stages/filters.pmf.html)
+- [RadialDensity](https://www.pdal.io/stages/filters.radialdensity.html)
+- [SMRF](https://www.pdal.io/stages/filters.smrf.html)
+
++++
+
+### Filters that change point order
+
+- [MortonOrder](https://www.pdal.io/stages/filters.mortonorder.html)
+- [Randomize](https://www.pdal.io/stages/filters.randomize.html)
+- [Sort](https://www.pdal.io/stages/filters.sort.html)
+
++++
+
+### Filters that move points
+
+- [Reprojection](https://www.pdal.io/stages/filters.reprojection.html)
+- [Transformation](https://www.pdal.io/stages/filters.transformation.html)
+
++++
+
+### Filters that cull points
+
+- [Crop](https://www.pdal.io/stages/filters.crop.html)
+- [Decimation](https://www.pdal.io/stages/filters.decimation.html)
+- [Divider](https://www.pdal.io/stages/filters.divider.html)
+- [Head](https://www.pdal.io/stages/filters.head.html)
+- [IQR](https://www.pdal.io/stages/filters.iqr.html)
+- [Locate](https://www.pdal.io/stages/filters.locate.html)
+- [MAD](https://www.pdal.io/stages/filters.mad.html)
+- [Range](https://www.pdal.io/stages/filters.range.html)
+- [Sample](https://www.pdal.io/stages/filters.sample.html)
+- [Tail](https://www.pdal.io/stages/filters.tail.html)
+- [VoxelCenterNearestNeighbor](https://www.pdal.io/stages/filters.voxelcenternearestneighbor.html)
+- [VoxelCentroidNearestNeighbor](https://www.pdal.io/stages/filters.vVoxelCentroidNearestNeighbor.html)
+
++++
+
+### Filters that create points
+
+- [PCLBlock](https://www.pdal.io/stages/filters.pclblock.html)
+- [VoxelGrid](https://www.pdal.io/stages/filters.voxelgrid.html)
+
++++
+
+### Filters that create new PointViews
+
+- [Chipper](https://www.pdal.io/stages/filters.chipper.html)
+- [Divider](https://www.pdal.io/stages/filters.divider.html)
+- [Groupby](https://www.pdal.io/stages/filters.groupby.html)
+- [Splitter](https://www.pdal.io/stages/filters.splitter.html)
+
++++
+
+### Filters that join PointViews
+
+- [Merge](https://www.pdal.io/stages/filters.merge.html)
+
++++
+
+### Filters that create metadata
+
+- [CPD](https://www.pdal.io/stages/filters.cpd.html)
+- [HexBin](https://www.pdal.io/stages/filters.hexbin.html)
+- [ICP](https://www.pdal.io/stages/filters.icp.html)
+- [Stats](https://www.pdal.io/stages/filters.stats.html)
+
++++
+
+### Filters that create meshes
+
+- [GreedyProjection](https://www.pdal.io/stages/filters.greedyprojection.html)
+- [GridProjection](https://www.pdal.io/stages/filters.gridprojection.html)
+- [MovingLeastSquares](https://www.pdal.io/stages/filters.movingleastsquares.html)
+- [Poisson](https://www.pdal.io/stages/filters.poisson.html)
+
++++
+
+### Filters to embed other languages
+
+- [Matlab](https://www.pdal.io/stages/filters.matlab.html)
+- [Python](https://www.pdal.io/stages/filters.python.html)
+
++++
+
+### Assign
+
+- `filters.assign`
+- Assign a value to a `DimRange`
+- Handy for resetting classifications
+
 ---
 
 ### Clusters
@@ -252,47 +325,6 @@ pdal translate input.las output.las --json pipeline.json
 +++
 
 ![png](figures/cluster-sizes.png)
-
----
-
-### Eigenvalues
-
-- `filters.eigenvalues`
-- Filters like `filters.approximatecoplanar` use eigenvalues, but analysts may wish to precompute eigenvalues and operate directly on them
-- Creates three new dimensions
-  - `Eigenvalue0`
-  - `Eigenvalue1`
-  - `Eigenvalue2`
-
-+++
-
-![png](figures/eigenvalues.png)
-
----
-
-### Estimate Rank
-
-- `filters.estimaterank`
-- Compute covariance of neighborhoods of points and estimate rank
-- Potentially useful for identifying linear features, planes, etc.
-- Creates new `Rank` dimension
-
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.estimaterank"
-    }
-  ]
-}
-```
-
-+++
-
-![rank scatter](figures/rank-qt.png)
 
 ---
 
@@ -309,13 +341,6 @@ pdal translate input.las output.las --json pipeline.json
 - `filters.groupby`
 - Split the incoming PointView into separate PointViews by given criteria
 - Allows us to operate on each individually (e.g., find centroid of each cluster)
-
----
-
-### Head (and Tail)
-
-- `filters.head` and `filters.tail`
-- Pass only the specified number of points from beginning or ending of the PointView
 
 ---
 
@@ -381,82 +406,6 @@ max            63.700000
 +++
 
 ![hag](figures/hag.png)
-
----
-
-### Interquartile Rnage
-
-- `filters.iqr`
-- Filter points by evaluating Interquartile Range for a given dimension
-
-+++
-
-![png](figures/iqr-lof.png)
-
----
-
-### KDistance
-
-- `filters.kdistance`
-- Compute the distance to the k-th nearest neighbor
-- Creates new `KDistance` dimension
-
----
-
-### Local Outlier Factor
-
-- Local Outlier Factor
-- Creates three new dimensions
-  - `KDistance`
-  - `LocalReachabilityDistance`
-  - `LocalOutlierFactor`
-
-+++
-
-```json
-{
-  "pipeline":[
-    "./data/isprs/samp11-utm.laz",
-    {
-      "type":"filters.lof"
-    }
-  ]
-}
-```
-
-+++
-
-![lof](figures/lof.png)
-
-+++
-
-![kdist](figures/kdist.png)
-
-+++
-
-![lrd](figures/lrd.png)
-
-+++
-
-![lof](figures/lof-qt.png)
-
-+++
-
-### Locate
-
-- `filters.locate`
-- Find and return only the min or max point in the incoming PointView (e.g., of a cluster)
-
----
-
-### Median Absolute Deviation
-
-- `filters.mad`
-- Filter points by evaluating Median Absolute Deviation for a given dimension
-
-+++
-
-![png](figures/mad-lof.png)
 
 ---
 
@@ -570,38 +519,6 @@ def sor(ins, outs):
 
 ---
 
-### Radial Density
-
-- `filters.radialdensity`
-- Return the number of points within sphere of given radius
-- Creates new `RadialDensity` dimension
-
----
-
-### Range
-
-+++
-
-```json
-{
-  "pipeline":[{
-    "type":"filters.range",
-    "limits":"Z[10:]"
-  }, {
-    "type":"filters.range",
-    "limits":"Classification[2:2]"
-  }, {
-    "type":"filters.range",
-    "limits":"Red!(20:40]"
-  }]
-}
-```
-@[3-4](Select all points with Z greater than or equal to 10)
-@[6-7](Select all points with classification of 2)
-@[9-10](Select points with red values less than or equal to 20 as well as those greater than 40)
-
----
-
 ### Sample
 
 - `filters.sample`
@@ -622,258 +539,6 @@ def sor(ins, outs):
 
 ---
 
-### Voxel Methods
-
-- `filters.voxelcenternearestneighbor` and `filters.voxelcentroidnearestneighbor`
-- Eventual replacement of PCL `filters.voxelgrid`
-- Thins the point cloud to one point per voxel
-
-+++
-
-![center](figures/voxelcenter.png)
-
-+++
-
-![centroid](figures/voxelcentroid.png)
-
----
-
-### Python Package
-
-* The PDAL Python [package](https://pypi.python.org/pypi/PDAL) can be installed via [pip](https://pip.pypa.io/en/stable/).
-
-  ```
-  pip install pdal
-  ```
-
-* Once installed, simply
-
-  ```python
-  import pdal
-  ```
-
----
-
-### Python Examples
-
-Note:
-The remainder of the presentation will present examples in the context of the PDAL Python package (though CLI samples will be provided as well).
-
-+++
-
-### Creating a Pipeline
-
-```python
->>> json = u'''
-... {
-...   "pipeline":[
-...     "./data/isprs/samp11-utm.laz"
-...   ]
-... }'''
-
-
->>> p = pdal.Pipeline(json)
-```
-@[1-6](Define the pipeline JSON)
-@[9](Create the pipeline)
-
-+++
-
-### Validating & Executing the Pipeline
-
-```python
->>> print('Is pipeline valid? %s' % p.validate())
-Is pipeline valid? True
-
-
->>> print('Pipeline processed %d points.' % p.execute())
-Pipeline processed 38010 points.
-
-
->>> arr = p.arrays[0]
->>> print('Pipeline contains %d array(s).' % (len(p.arrays)))
-Pipeline contains 1 array(s).
-```
-@[1-2](Check for a valid pipeline)
-@[5-6](Execute the pipeline)
-@[9-11](Check how many `ndarrays` were returned)
-
-+++
-
-### Use the `ndarray`
-
-#### Print the first point record
-
-```python
->>> print(arr[0])
-```
-
-```bash
-(512743.63, 5403547.33, 308.68, 0, 1, 1, 0, 0, 2, 0.0, 0, 0)
-```
-
-+++
-
-#### Print the first 10 X values
-
-```python
->>> print(arr['X'][:10])
-```
-
-```bash
-[ 512743.63  512743.62  512743.61  512743.6   512743.6   512741.5   512741.5
-  512741.49  512741.48  512741.47]
-```
-
-+++
-
-#### Print the mean of all Z values
-
-```python
->>> print(arr['Z'].mean())
-```
-
-```bash
-356.17143357
-```
-
-+++
-
-### Or Pandas!
-
-```python
->>> import pandas as pd
->>> samp11 = pd.DataFrame(arr, columns=['X','Y','Z'])
->>> samp11.head()
-```
-
-```bash
-           X           Y       Z
-0  512743.63  5403547.33  308.68
-1  512743.62  5403547.33  308.70
-2  512743.61  5403547.33  308.72
-3  512743.60  5403547.34  308.68
-4  512743.60  5403547.33  308.73
-```
-
-+++
-
-```python
->>> samp11.describe()
-```
-
-```bash
-                   X             Y             Z
-count   38010.000000  3.801000e+04  38010.000000
-mean   512767.010570  5.403708e+06    356.171434
-std        38.570375  8.587360e+01     29.212680
-min    512700.870000  5.403547e+06    295.250000
-25%    512733.530000  5.403645e+06    329.060000
-50%    512766.940000  5.403705e+06    356.865000
-75%    512799.900000  5.403790e+06    385.860000
-max    512834.760000  5.403850e+06    404.080000
-```
-
-+++
-
-### Analyze
-
-```python
->>> import seaborn as sns
->>> sns.kdeplot(samp11['Z'], cut=0, shade=True, vertical=True);
-```
-
-![Z KDE](figures/kde-z.png)
-
-+++
-
-### Searching Near a Point
-
-#### Find the median point
-
-```python
->>> med = samp11.median()
->>> print(med)
-```
-
-```bash
-X     512766.940
-Y    5403705.460
-Z        356.865
-dtype: float64
-```
-
-+++
-
-#### Print the distance to the three nearest neighbors
-
-```python
->>> from scipy import spatial
->>> tree = spatial.cKDTree(samp11)
->>> dists, idx = tree.query(med, k=3)
->>> print(dists)
-```
-
-```bash
-[ 0.6213091   1.37645378  1.51757207]
-```
-
-+++
-
-#### Print the point records of the three nearest neighbors
-
-```python
->>> samp11.iloc[idx]
-```
-
-```bash
-               X           Y       Z
-31897  512767.16  5403706.02  357.02
-31881  512767.93  5403706.29  356.39
-31972  512765.75  5403706.19  356.27
-```
-
-+++
-
-### Ignoring a `DimRange`
-
-- Available to `filters.pmf` and `filters.smrf`
-- Eliminates the need to completely remove points (e.g., noise)
-- Instead, points are ignored
-
-+++
-
-```json
-{
-  "pipeline":[
-    {
-      "type":"filters.range",
-      "limits":"Classification![7:7]"
-    },
-    {
-      "type":"filters.smrf"
-    }
-  ]
-}
-```
-@[1-11](Noise points are removed!)
-
-+++
-
-```json
-{
-  "pipeline":[
-    {
-      "type":"filters.smrf",
-      "ignore":"Classification[7:7]"
-    }
-  ]
-}
-```
-@[1-8](Noise points are left intact, just ignored.)
-
----
-
 # Example Pipelines
 
 Credit to Chris Irwin.
@@ -886,8 +551,8 @@ Credit to Chris Irwin.
     "type":"readers.las",
     "spatialreference":"EPSG:32610"
   }, {
-    "assignment":"Classification[2:4]=0",
-    "type":"filters.assign"
+    "type":"filters.assign",
+    "assignment":"Classification[2:4]=0"
   }, {
     "type":"filters.smrf",
     "ignore":"Classification[7:7]"
@@ -915,8 +580,8 @@ Credit to Chris Irwin.
   "pipeline":[{
     "type":"readers.las"
   }, {
-    "limits":"Classification[2:2]",
-    "type":"filters.range"
+    "type":"filters.range",
+    "limits":"Classification[2:2]"
   }, {
     "type":"filters.poisson",
     "depth":"8"
@@ -940,8 +605,8 @@ Credit to Chris Irwin.
     "type":"readers.las",
     "spatialreference":"EPSG:32610"
   }, {
-    "limits":"Classification[2:4]",
-    "type":"filters.range"
+    "type":"filters.range",
+    "limits":"Classification[2:4]"
   }, {
     "type":"filters.greedyprojection"
   }, {
@@ -966,8 +631,8 @@ Credit to Chris Irwin.
     "in_srs":"EPSG:6340",
     "out_srs":"EPSG:26911"
   }, {
-    "assignment":"Classification[:]=0",
-    "type":"filters.assign"
+    "type":"filters.assign",
+    "assignment":"Classification[:]=0"
   }, {
     "type":"filters.outlier"
   }, {
@@ -976,8 +641,8 @@ Credit to Chris Irwin.
   }, {
     "type":"filters.smrf"
   }, {
-    "length":"1000",
-    "type":"filters.splitter"
+    "type":"filters.splitter",
+    "length":"1000"
   }, {
     "type":"writers.las",
     "scale_x":"0.001",
@@ -989,8 +654,8 @@ Credit to Chris Irwin.
   }, {
     "type":"filters.merge"
   }, {
-    "limits":"Classification[2:2]",
-    "type":"filters.range"
+    "type":"filters.range",
+    "limits":"Classification[2:2]"
   }, {
     "type":"writers.gdal",
     "radius":0.7071,
@@ -1163,45 +828,35 @@ max    512831.280000  5.403739e+06  401.930000          63.700000
 
 ![rank scatter nonground](figures/rank-qt-non-ground.png)
 
----
-
-## Questions?
-
----
-
-### Status of PCL Filters
-
-+++
-
-| **Old (PCL)** | **New (PDAL)** |
-|---------------|----------------|
-| `filters.ground` | `filters.pmf` |
-| `filters.radiusoutlier` | `filters.outlier` |
-| `filters.statisticaloutlier` | `filters.outlier` |
-| `filters.height` | `filters.hag` |
-| `filters.dartsample` | `filters.sample` |
-
-<p style="font-size:0.6em">Native PDAL variants of PCL Plugin filters</p>
-
 +++
 
 ```json
 {
-  "pipeline": [
-    {
-      "type": "filters.pclblock",
-      "methods": [
-        {
-          "setLeafSize": {
-            "y": 2.0,
-            "x": 2.0,
-            "z": 2.0
-          },
-          "name": "VoxelGrid"
-        }
-      ]
-    }
-  ]
+  "pipeline":[{
+    "type":"readers.las"
+  }, {
+    "type":"filters.smrf"
+  }, {
+    "type":"filters.hag"
+  }, {
+    "type":"filters.colorinterp",
+    "dimension":"HeightAboveGround",
+    "minimum":0.0,
+    "maximum":20.0,
+    "ramp":"blue_orange"
+  }, {
+    "type":"writers.prc",
+    "prc_filename":"/Users/chambbj/Temp/colorinterp-prc.prc",
+    "pdf_filename":"/Users/chambbj/Temp/colorinterp-prc.pdf"
+  }]
 }
 ```
-@[5-14](PCL JSON specification bumped to v0.2 → easier to embed in PDAL JSON)
+@[3](Read the data)
+@[5](Apply Simple Morphological Filter)
+@[7](Compute Height Above Ground)
+@[9-13](Colorize points by Height Above Ground)
+@[15-17](Write PDF)
+
+---
+
+## Questions?
