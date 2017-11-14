@@ -87,8 +87,6 @@ pdal translate input.las output.las --json pipeline.json
 
 ### Filter Stage Roundup
 
-In which we touch on touch on the wide number of filter stages available to PDAL users today.
-
 +++
 
 But first...
@@ -176,7 +174,8 @@ But first...
 
 +++
 
-Filters that:
+### Filter "categories"
+
 - create/alter dimensions (other than XYZ)
 - change point order
 - move points
@@ -192,16 +191,17 @@ Filters that:
 
 ### Filters that create/alter dimensions (other than XYZ)
 
-- [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html)
-- [Assign](https://www.pdal.io/stages/filters.assign.html)
-- [Cluster](https://www.pdal.io/stages/filters.cluster.html)
-- [ColorInterp](https://www.pdal.io/stages/filters.colorinterp.html)
-- [Colorization](https://www.pdal.io/stages/filters.colorization.html)
-- [ComputeRange](https://www.pdal.io/stages/filters.computerange.html)
-- [Eigenvalues](https://www.pdal.io/stages/filters.eigenvalues.html)
-- [EstimateRank](https://www.pdal.io/stages/filters.estimaterank.html)
-- [Extended Local Minimum](https://www.pdal.io/stages/filters.elm.html)
-- [Ferry](https://www.pdal.io/stages/filters.ferry.html)
+|----|
+| [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html) |
+| [Assign](https://www.pdal.io/stages/filters.assign.html) |
+| [Cluster](https://www.pdal.io/stages/filters.cluster.html) |
+| [ColorInterp](https://www.pdal.io/stages/filters.colorinterp.html) |
+| [Colorization](https://www.pdal.io/stages/filters.colorization.html) |
+| [ComputeRange](https://www.pdal.io/stages/filters.computerange.html) |
+| [Eigenvalues](https://www.pdal.io/stages/filters.eigenvalues.html) |
+| [EstimateRank](https://www.pdal.io/stages/filters.estimaterank.html) |
+| [Extended Local Minimum](https://www.pdal.io/stages/filters.elm.html) |
+| [Ferry](https://www.pdal.io/stages/filters.ferry.html) |
 
 +++
 
