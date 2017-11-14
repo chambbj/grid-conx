@@ -21,6 +21,14 @@ Bradley J Chambers, Radiant Solutions
 ### How to pull/start Alpine container
 
 ```console
+docker pull pdal/pdal:[tag]
+```
+
+where `tag` is [master|1.6|1.5|1.4]-[alpine|ubuntu] (or just `latest`)
+
++++
+
+```console
 docker pull chambbj/grid-conx
 docker run -it --rm chambbj/grid-conx /bin/sh
 ```
