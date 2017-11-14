@@ -8,9 +8,10 @@ Bradley J Chambers, Radiant Solutions
 
 ### Overview
 
-- Getting Started (5 min)
-- Filter Stage Roundup (25 min)
-- Pipeline Examples (15 min)
+- Getting Started
+- Python Examples
+- Filter Stage Roundup
+- Pipeline Examples
 
 ---
 
@@ -93,6 +94,203 @@ pdal pipeline pipeline.json --readers.las.filename=input.las --writers.las.filen
 
 ```bash
 pdal translate input.las output.las --json pipeline.json
+```
+
+---
+
+### Python Package
+
+* The PDAL Python [package](https://pypi.python.org/pypi/PDAL) can be installed via [pip](https://pip.pypa.io/en/stable/).
+
+  ```
+  pip install pdal
+  ```
+
+* Once installed, simply
+
+  ```python
+  import pdal
+  ```
+
+---
+
+### Python Examples
+
+Note:
+The remainder of the presentation will present examples in the context of the PDAL Python package (though CLI samples will be provided as well).
+
++++
+
+### Creating a Pipeline
+
+```python
+>>> json = u'''
+... {
+...   "pipeline":[
+...     "./data/isprs/samp11-utm.laz"
+...   ]
+... }'''
+
+
+>>> p = pdal.Pipeline(json)
+```
+@[1-6](Define the pipeline JSON)
+@[9](Create the pipeline)
+
++++
+
+### Validating & Executing the Pipeline
+
+```python
+>>> print('Is pipeline valid? %s' % p.validate())
+Is pipeline valid? True
+
+
+>>> print('Pipeline processed %d points.' % p.execute())
+Pipeline processed 38010 points.
+
+
+>>> arr = p.arrays[0]
+>>> print('Pipeline contains %d array(s).' % (len(p.arrays)))
+Pipeline contains 1 array(s).
+```
+@[1-2](Check for a valid pipeline)
+@[5-6](Execute the pipeline)
+@[9-11](Check how many `ndarrays` were returned)
+
++++
+
+### Use the `ndarray`
+
+#### Print the first point record
+
+```python
+>>> print(arr[0])
+```
+
+```bash
+(512743.63, 5403547.33, 308.68, 0, 1, 1, 0, 0, 2, 0.0, 0, 0)
+```
+
++++
+
+#### Print the first 10 X values
+
+```python
+>>> print(arr['X'][:10])
+```
+
+```bash
+[ 512743.63  512743.62  512743.61  512743.6   512743.6   512741.5   512741.5
+  512741.49  512741.48  512741.47]
+```
+
++++
+
+#### Print the mean of all Z values
+
+```python
+>>> print(arr['Z'].mean())
+```
+
+```bash
+356.17143357
+```
+
++++
+
+### Or Pandas!
+
+```python
+>>> import pandas as pd
+>>> samp11 = pd.DataFrame(arr, columns=['X','Y','Z'])
+>>> samp11.head()
+```
+
+```bash
+           X           Y       Z
+0  512743.63  5403547.33  308.68
+1  512743.62  5403547.33  308.70
+2  512743.61  5403547.33  308.72
+3  512743.60  5403547.34  308.68
+4  512743.60  5403547.33  308.73
+```
+
++++
+
+```python
+>>> samp11.describe()
+```
+
+```bash
+                   X             Y             Z
+count   38010.000000  3.801000e+04  38010.000000
+mean   512767.010570  5.403708e+06    356.171434
+std        38.570375  8.587360e+01     29.212680
+min    512700.870000  5.403547e+06    295.250000
+25%    512733.530000  5.403645e+06    329.060000
+50%    512766.940000  5.403705e+06    356.865000
+75%    512799.900000  5.403790e+06    385.860000
+max    512834.760000  5.403850e+06    404.080000
+```
+
++++
+
+### Analyze
+
+```python
+>>> import seaborn as sns
+>>> sns.kdeplot(samp11['Z'], cut=0, shade=True, vertical=True);
+```
+
+![Z KDE](figures/kde-z.png)
+
++++
+
+### Searching Near a Point
+
+#### Find the median point
+
+```python
+>>> med = samp11.median()
+>>> print(med)
+```
+
+```bash
+X     512766.940
+Y    5403705.460
+Z        356.865
+dtype: float64
+```
+
++++
+
+#### Print the distance to the three nearest neighbors
+
+```python
+>>> from scipy import spatial
+>>> tree = spatial.cKDTree(samp11)
+>>> dists, idx = tree.query(med, k=3)
+>>> print(dists)
+```
+
+```bash
+[ 0.6213091   1.37645378  1.51757207]
+```
+
++++
+
+#### Print the point records of the three nearest neighbors
+
+```python
+>>> samp11.iloc[idx]
+```
+
+```bash
+               X           Y       Z
+31897  512767.16  5403706.02  357.02
+31881  512767.93  5403706.29  356.39
+31972  512765.75  5403706.19  356.27
 ```
 
 ---
