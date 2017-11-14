@@ -576,6 +576,76 @@ Credit to Chris Irwin.
 @[9-13](Colorize points by Height Above Ground)
 @[15-17](Write PDF)
 
++++
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las"
+  }, {
+    "type":"filters.assign",
+    "assignment":"Classification[:]=0"
+  }, {
+    "type":"filters.elm"
+  }, {
+    "type":"filters.smrf",
+    "ignore":"Classification[7:7]"
+  }, {
+    "type":"filters.hag"
+  }, {
+    "type":"filters.python",
+    "module":"anything",
+    "function":"filter",
+    "script":"/pipelines/viridis.py",
+    "pdalargs":"{\"cmap\":\"inferno\",\"dimension\":\"HeightAboveGround\"}"
+  }, {
+    "type":"writers.prc",
+    "prc_filename":"/data/colorinterp-prc4.prc",
+    "pdf_filename":"/data/colorinterp-prc4.pdf"
+  }]
+}
+```
+@[3](Read the data)
+@[5-6](Reassign all classifications to 0)
+@[8](Mark low outliers as noise)
+@[10-11](Classify ground, ignoring noise)
+@[13](Compute Height Above Ground)
+@[15-19](Pass data to Python script to colorize by Height Above Ground)
+@[21-23](Write PRC)
+
++++
+
+```python
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def filter(ins, outs):
+    ret = ins[pdalargs['dimension']]
+    cmap = plt.get_cmap(pdalargs['cmap'])
+    if pdalargs.get('norm') != None:
+        if pdalargs['norm'] == 'log':
+            norm = matplotlib.colors.LogNorm()
+    else:
+        norm = matplotlib.colors.Normalize()
+    norm.autoscale(ret)
+
+    rgba = cmap(norm(ret))
+    Red = np.round(rgba[:, 0] * 256)
+    Green = np.round(rgba[:, 1] * 256)
+    Blue = np.round(rgba[:, 2] * 256)
+
+    outs['Red'] = Red.astype('uint16')
+    outs['Green'] = Green.astype('uint16')
+    outs['Blue'] = Blue.astype('uint16')
+    return True
+```
+@[7-8](Gather data and requested colormap from pdalargs)
+@[9-14](Setup normalization)
+@[16-19](Apply normalization and colormap, setting Red, Green, and Blue)
+@[21-23](Cast and pass RGB outputs)
+
 ---
 
 ## Questions?
