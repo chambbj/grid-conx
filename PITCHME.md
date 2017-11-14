@@ -191,6 +191,7 @@ But first...
 
 ### Filters that create/alter dimensions (other than XYZ)
 
+| Filter Name |
 |----|
 | [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html) |
 | [Assign](https://www.pdal.io/stages/filters.assign.html) |
