@@ -27,19 +27,11 @@ docker run -it --rm chambbj/grid-conx /bin/sh
 
 +++
 
-Need to:
-- apk add --update ca-certificates openssl
-- apk add --no-cache proj4-dev
-- Download some sample data. We could clone PDAL/data, or
-- wget https://github.com/PDAL/data/raw/master/isprs/samp11-utm.laz
+pdal info /data/isprs/samp11-utm.laz
 
 +++
 
-pdal info samp11-utm.laz
-
-+++
-
-pdal translate samp11-utm.laz samp11-utm.bpf
+pdal translate /data/isprs/samp11-utm.laz /data/isprs/samp11-utm.bpf
 
 +++
 
