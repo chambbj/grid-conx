@@ -605,7 +605,7 @@ Credit to Chris Irwin.
     "module":"anything",
     "function":"filter",
     "script":"/pipelines/viridis.py",
-    "pdalargs":"{\"cmap\":\"inferno\",\"dimension\":\"HeightAboveGround\"}"
+    "pdalargs":"{\"cmap\":\"inferno\",\"dimension\":\"HeightAboveGround\",\"norm\":\"log\"}"
   }, {
     "type":"writers.prc",
     "prc_filename":"/data/colorinterp-prc4.prc",
@@ -653,6 +653,43 @@ def filter(ins, outs):
 @[9-14](Setup normalization)
 @[16-19](Apply normalization and colormap, setting Red, Green, and Blue)
 @[21-23](Cast and pass RGB outputs)
+
++++
+
+```json
+{
+  "pipeline":[{
+    "type":"readers.las"
+  }, {
+    "type":"filters.assign",
+    "assignment":"Classification[:]=0"
+  }, {
+    "type":"filters.elm"
+  }, {
+    "type":"filters.smrf",
+    "ignore":"Classification[7:7]"
+  }, {
+    "type":"filters.hag"
+  }, {
+    "type":"filters.range",
+    "limits":"HeightAboveGround[2:)"
+  }, {
+    "type":"filters.approximatecoplanar"
+  }, {
+    "type":"filters.python",
+    "module":"anything",
+    "function":"filter",
+    "script":"/pipelines/viridis.py",
+    "pdalargs":"{\"cmap\":\"viridis\",\"dimension\":\"Coplanar\"}"
+  }, {
+    "type":"writers.prc",
+    "prc_filename":"/data/colorinterp-prc4.prc",
+    "pdf_filename":"/data/colorinterp-prc4.pdf"
+  }]
+}
+```
+@[15-16](Crop to those points 2 meters above ground and higher)
+@[18](Determine if each point is possibly coplanar)
 
 ---
 
