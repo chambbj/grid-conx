@@ -27,11 +27,15 @@ docker run -it --rm chambbj/grid-conx /bin/sh
 
 +++
 
+```bash
 pdal info /data/isprs/samp11-utm.laz
+```
 
 +++
 
+```console
 pdal translate /data/isprs/samp11-utm.laz /data/isprs/samp11-utm.bpf
+```
 
 +++
 
@@ -191,18 +195,16 @@ But first...
 
 ### Filters that create/alter dimensions (other than XYZ)
 
-| Filter Name |
-|----|
-| [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html) |
-| [Assign](https://www.pdal.io/stages/filters.assign.html) |
-| [Cluster](https://www.pdal.io/stages/filters.cluster.html) |
-| [ColorInterp](https://www.pdal.io/stages/filters.colorinterp.html) |
-| [Colorization](https://www.pdal.io/stages/filters.colorization.html) |
-| [ComputeRange](https://www.pdal.io/stages/filters.computerange.html) |
-| [Eigenvalues](https://www.pdal.io/stages/filters.eigenvalues.html) |
-| [EstimateRank](https://www.pdal.io/stages/filters.estimaterank.html) |
-| [Extended Local Minimum](https://www.pdal.io/stages/filters.elm.html) |
-| [Ferry](https://www.pdal.io/stages/filters.ferry.html) |
+- [ApproximateCoplanar](https://www.pdal.io/stages/filters.approximatecoplanar.html)
+- [Assign](https://www.pdal.io/stages/filters.assign.html)
+- [Cluster](https://www.pdal.io/stages/filters.cluster.html)
+- [ColorInterp](https://www.pdal.io/stages/filters.colorinterp.html)
+- [Colorization](https://www.pdal.io/stages/filters.colorization.html)
+- [ComputeRange](https://www.pdal.io/stages/filters.computerange.html)
+- [Eigenvalues](https://www.pdal.io/stages/filters.eigenvalues.html)
+- [EstimateRank](https://www.pdal.io/stages/filters.estimaterank.html)
+- [Extended Local Minimum](https://www.pdal.io/stages/filters.elm.html)
+- [Ferry](https://www.pdal.io/stages/filters.ferry.html)
 
 +++
 
@@ -250,13 +252,6 @@ But first...
 - [Tail](https://www.pdal.io/stages/filters.tail.html)
 - [VoxelCenterNearestNeighbor](https://www.pdal.io/stages/filters.voxelcenternearestneighbor.html)
 - [VoxelCentroidNearestNeighbor](https://www.pdal.io/stages/filters.vVoxelCentroidNearestNeighbor.html)
-
-+++
-
-### Filters that create points
-
-- [PCLBlock](https://www.pdal.io/stages/filters.pclblock.html)
-- [VoxelGrid](https://www.pdal.io/stages/filters.voxelgrid.html)
 
 +++
 
@@ -484,31 +479,6 @@ Credit to Chris Irwin.
 
 +++
 
-```python
->>> p = pdal.Pipeline(json)
->>> count = p.execute()
->>> vo = pd.DataFrame(p.arrays[0], columns=['X','Y','Z','HeightAboveGround'])
->>> vo.describe()
-```
-
-```bash
-                   X             Y           Z  HeightAboveGround
-count      15.000000  1.500000e+01   15.000000          15.000000
-mean   512799.513333  5.403632e+06  352.667333          38.212000
-std        23.111817  4.812817e+01   22.661835          16.576486
-min    512730.790000  5.403557e+06  317.300000          20.050000
-25%    512795.435000  5.403623e+06  333.970000          21.895000
-50%    512798.290000  5.403624e+06  354.110000          38.450000
-75%    512813.460000  5.403626e+06  367.255000          54.255000
-max    512831.280000  5.403739e+06  401.930000          63.700000
-```
-
-+++
-
-```python
->>> vo
-```
-
 ```bash
             X           Y       Z  HeightAboveGround
 0   512794.22  5403576.38  317.30              21.99
@@ -554,10 +524,6 @@ max    512831.280000  5.403739e+06  401.930000          63.700000
 
 +++
 
-![png](figures/coplanar-nonground.png)
-
-+++
-
 ```json
 {
   "pipeline":[
@@ -580,10 +546,6 @@ max    512831.280000  5.403739e+06  401.930000          63.700000
 @[7](Compute Height Above Ground)
 @[9-10](Passthrough only points with HeightAboveGround greater than 2 meters)
 @[12](Estimate rank at each point)
-
-+++
-
-![rank scatter nonground](figures/rank-qt-non-ground.png)
 
 +++
 
